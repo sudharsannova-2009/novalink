@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>45-Day Performance Tracker</title>
+<style>
+  :root{
+    --bg: #14161a;
+    --panel: #1b1e23;
+    --panel-raised: #21252b;
+    --border: #2c3038;
+    --border-soft: #262a31;
+    --text-hi: #f2f3f5;
+    --text-mid: #c7cad0;
+    --text-dim: #7d828c;
+    --text-faint: #52565f;
+    --accent: #e8e9eb;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background: var(--bg); }
+  body{
+    color: var(--text-mid);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  .app{ max-width: 720px; margin: 0 auto; padding: 28px 20px 60px; display: block; }
+
+  /* ---- Header ---- */
+  .masthead{ margin-bottom: 22px; }
+  .eyebrow{
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-faint); font-weight: 600; margin-bottom: 6px;
+  }
+  h1{
+    font-size: 22px; font-weight: 600; color: var(--text-hi);
+    margin: 0 0 4px 0; letter-spacing: -0.01em;
+  }
+  .subtitle{ font-size: 13px; color: var(--text-dim); }
+
+  /* ---- Progress rail ---- */
+  .rail{
+    display: flex; flex-wrap: wrap; gap: 4px; padding: 16px 0 20px;
+    border-bottom: 1px solid var(--border-soft); margin-bottom: 20px;
+  }
+  .dot{
+    width: 11px; height: 11px; border-radius: 2px;
+    background: transparent; border: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .dot.done{ background: var(--text-hi); border-color: var(--text-hi); }
+  .dot.partial{ background: var(--text-faint); border-color: var(--text-dim); }
+  .dot.missed{ background: transparent; border-color: var(--text-dim); border-style: dashed; }
+  .dot.current{ outline: 1px solid var(--text-hi); outline-offset: 2px; }
+
+  /* ---- Day navigator ---- */
+  .nav{
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .nav-btn{
+    background: var(--panel-raised); border: 1px solid var(--border);
+    color: var(--text-mid); font-size: 12px; padding: 8px 14px;
+    border-radius: 5px; cursor: pointer; font-family: inherit;
+  }
+  .nav-btn:disabled{ opacity: 0.35; cursor: not-allowed; }
+  .day-label{ font-size: 13px; color: var(--text-dim); }
+  .day-label b{ color: var(--text-hi); font-weight: 600; }
+
+  /* ---- Recovery banner ---- */
+  .recovery-banner{
+    border: 1px solid var(--border); border-left: 2px solid var(--text-mid);
+    background: var(--panel); padding: 10px 14px; margin-bottom: 16px;
+    border-radius: 4px; font-size: 12px; color: var(--text-mid);
+  }
+
+  /* ---- Backlog ---- */
+  .backlog{
+    border: 1px solid var(--border); background: var(--panel);
+    border-radius: 6px; padding: 14px 16px; margin-bottom: 16px;
+  }
+  .backlog-title{
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 600; margin-bottom: 8px;
+  }
+  .backlog-item{
+    font-size: 13px; color: var(--text-hi); padding: 4px 0 4px 12px;
+    border-left: 1px solid var(--border); margin-bottom: 4px;
+  }
+  .backlog-item span{ color: var(--text-faint); font-size: 11px; display: block; }
+
+  /* ---- Quote ---- */
+  .quote{
+    font-family: Georgia, serif; font-style: italic;
+    font-size: 15px; color: var(--text-hi); line-height: 1.6;
+    padding: 16px 0 22px; border-bottom: 1px solid var(--border-soft);
+    margin-bottom: 22px;
+  }
+
+  /* ---- Task cards ---- */
+  .task{
+    background: var(--panel); border: 1px solid var(--border-soft);
+    border-radius: 8px; padding: 16px 18px; margin-bottom: 12px;
+  }
+  .task-head{
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .task-name{ font-size: 13px; font-weight: 600; color: var(--text-hi); }
+  .task-time{ font-size: 11px; color: var(--text-faint); }
+  .task-body{ font-size: 13px; color: var(--text-mid); margin-bottom: 12px; }
+  .concept-label{ color: var(--text-faint); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 2px; }
+  .concept-value{ font-size: 13px; color: var(--text-hi); display: block; margin-bottom: 8px; }
+  .mandate{ font-size: 12px; color: var(--text-dim); margin-top: 8px; margin-bottom: 8px; }
+  
+  .toggle-row{ display: flex; gap: 8px; }
+  .toggle{
+    flex: 1; text-align: center; font-size: 11px; padding: 8px 0;
+    border-radius: 5px; border: 1px solid var(--border); cursor: pointer;
+    color: var(--text-dim); background: transparent;
+  }
+  .toggle.active-done{ background: var(--text-hi); color: #14161a; border-color: var(--text-hi); font-weight: 600; }
+  .toggle.active-missed{ border-style: dashed; color: var(--text-hi); border-color: var(--text-dim); }
+
+  /* ---- Status log ---- */
+  .status-log{
+    background: var(--panel); border: 1px solid var(--border-soft);
+    border-radius: 8px; padding: 16px 18px; margin-bottom: 20px;
+  }
+  textarea{
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text-hi); font-size: 12.5px; padding: 8px 10px; border-radius: 5px; height: 50px;
+  }
+
+  @media (max-width: 480px){
+    .app{ padding: 20px 14px 50px; }
+    h1{ font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">System loading...</div>
+
+<script>
+// Pure ES5 Data Arrays
+var codingTopics = ["Variables & Data Types (int, float, char)", "Operators & Expressions (arithmetic, logical, bitwise)", "Conditional Statements (if/else, switch)", "Input/Output Precision (scanf/printf format control)", "Type Casting & Conversion Rules", "Boolean Logic & Truth Tables", "Debugging: Compiler Errors vs Logic Errors", "Mini Project: Simple Calculator (full manual trace)", "Pointers - Basics (address-of, dereference)", "Pointer Arithmetic", "Stack vs Heap Memory", "Dynamic Allocation (malloc / calloc)", "Realloc & Memory Resizing", "Free() & Memory Leak Prevention", "Structs - Basics & Member Access", "Pointers to Structs", "For Loops - Fundamentals & Trace Tables", "While vs Do-While Loops", "Nested Loops (multiplication tables, patterns)", "Loop Control: break / continue", "Debugging Infinite Loops", "Mini Project: Pattern Printing (full manual trace)", "1D Arrays - Declaration & Traversal", "Array Operations: Insert / Delete / Search", "Multi-Dimensional Arrays (2D grids)", "Strings as Character Arrays", "String Functions - Manual Implementation (strlen, strcpy)", "Sorting Basics: Bubble Sort (line-by-line trace)", "Linear Search - Trace & Complexity", "Binary Search - Iterative Implementation", "Binary Search - Recursive Introduction", "Time Complexity: Big-O Basics", "Searching Edge Cases (duplicates, empty arrays)", "Two-Pointer Technique", "Sorting Refresher: Selection Sort", "Mini Project: Search Engine Simulation (full manual trace)", "Recursion - Base Case & Recursive Case", "Factorial via Recursion (trace the call stack)", "Fibonacci via Recursion (trace the call stack)", "Recursion vs Iteration - Trade-offs", "Tower of Hanoi - Concept & Trace", "Recursive Array Sum", "Recursive String Reversal", "Tail Recursion - Concept & Optimization", "Capstone: Full Program Trace & 45-Day Review"];
+var mathTopics = ["Matrix Basics & Notation", "Matrix Addition & Subtraction", "Matrix Multiplication", "Identity & Transpose Matrices", "Determinants (2x2 Systems)", "Determinants (3x3 Systems)", "Inverse of a Matrix", "Matrix Applications in Circuit Equations", "Cramer's Rule - Two Variable Systems", "Cramer's Rule - Three Variable Systems", "Solving Linear Systems - Method Comparison", "Applications: Node Voltage Equations", "Applications: Mesh Current Equations", "Practice: Mixed Linear Systems", "Limits - The Foundation of Derivatives", "Derivative Basics & Power Rule", "Product Rule & Quotient Rule", "Chain Rule", "Derivatives of Trigonometric Functions", "Derivatives of Exponential & Log Functions", "Applications: Rate of Change in Circuits", "Second Derivatives & Concavity", "Integration Basics & Antiderivatives", "Definite Integrals", "Integration by Substitution", "Integration by Parts", "Area Under Curves", "Applications: Charge from Current", "Applications: Energy Calculations", "Practice: Mixed Integration Problems", "Kirchhoff's Voltage Law (KVL) - Basics", "Kirchhoff's Current Law (KCL) - Basics", "Series Circuit Analysis", "Parallel Circuit Analysis", "Node Analysis Method", "Mesh Analysis Method", "Thevenin's Theorem", "Norton's Theorem", "Diode Basics & I-V Characteristics", "PN Junction & Depletion Region", "BJT Basics & Operating Regions", "BJT Biasing - Fixed Bias", "BJT Biasing - Voltage Divider Bias", "FET Basics & Biasing", "Capstone: Full Semiconductor Biasing Circuit Design"];
+var quotes = ["Independence is built one disciplined hour at a time.", "The world stage does not ask where you started.", "Quiet, consistent effort outlasts loud bursts of motivation.", "You are early in a race most people never start.", "Discomfort today is just tuition for the freedom you want later.", "No one is coming to rescue your ambition. Good.", "A calm mind finishes what a restless mind only begins.", "Global standards are met by unglamorous repetition.", "Master the fundamentals until they are boring.", "Your competition is yesterday's version of you.", "Small, exact work compounds into large, undeniable skill.", "Resilience is showing up again anyway.", "Every expert was once someone who refused to quit.", "Precision now spares you confusion later.", "The strongest engineers are the most exact.", "Nobody sees the fifth attempt. Everyone sees the finished result.", "Ambition without discipline is just a wish.", "Independence begins when you stop waiting for permission.", "You do not need to feel ready. You only need to begin.", "Clarity is a habit, built one focused session at a time.", "The path to opportunity is paved with daily proof.", "What you tolerate today becomes your standard tomorrow.", "Effort hidden from everyone still counts.", "A steady student outperforms a flashing, irregular genius.", "You are allowed to be a beginner. Don't stay one.", "Every line you trace by hand is a shortcut you own.", "Comfort and growth do not share the same room.", "Discipline is choosing what you want most over what you want now.", "The quiet ones who keep working surprise everyone.", "Your future does not care about your mood today.", "Skill is repetition with attention.", "The version of you that succeeds is built on ordinary days.", "Do the work even when no one is measuring it.", "A calm, focused hour is worth more than an anxious day.", "You are training your word to yourself.", "Real confidence is just competence you can no longer doubt.", "Independence is a muscle. It only grows under load.", "The world rewards people who finish what they start.", "Nobody becomes global by staying comfortable at home.", "Understanding beats memorizing, every single time.", "You fall to the level of your systems.", "Patience is working while results are invisible.", "A rested mind solves what a tired mind only stares at.", "Every subject you master becomes a tool for the next.", "The standard you accept in private is your performance standard.", "Forty-five days from now, choose proof over an excuse."];
+
+var STORAGE_KEY = 'mint_tracker_state_es5';
+
+// Setup basic global state object using traditional properties
+var state = {
+  current: 1,
+  days: {}
+};
+
+// Initialize the data structures cleanly
+for (var d = 1; d <= 45; d++) {
+  state.days[d] = { coding: null, math: null, comm: null, reflection: '' };
+}
+
+// Device loading routine
+try {
+  var saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    var parsed = JSON.parse(saved);
+    if (parsed && parsed.days) {
+      state = parsed;
+    }
+  }
+} catch (e) {}
+
+function saveToDevice() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+function getFitness(day) {
+  if (day % 5 === 0) return "Light Recovery: 20-minute walk.";
+  return (day % 2 === 1) ? "Upper Body: Pull-ups & Dumbbell circuit." : "Cardio: 5 km cycling loop.";
+}
+
+function render() {
+  var app = document.getElementById('app');
+  if (!app) return;
+
+  var day = state.current;
+  var isRecovery = (day % 5 === 0);
+  var cTime = isRecovery ? 45 : 90;
+  var mTime = isRecovery ? 30 : 60;
+  
+  var rec = state.days[day];
+
+  // 1. Build Dot Matrix Rail
+  var dotsHtml = '';
+  for (var i = 1; i <= 45; i++) {
+    var dRec = state.days[i];
+    var dotClass = '';
+    
+    if (dRec.coding === 'done' && dRec.math === 'done' && dRec.comm === 'done') {
+      dotClass = 'done';
+    } else if (dRec.coding === 'missed' || dRec.math === 'missed' || dRec.comm === 'missed') {
+      dotClass = 'missed';
+    } else if (dRec.coding || dRec.math || dRec.comm) {
+      dotClass = 'partial';
+    }
+
+    if (i === day) {
+      dotClass += ' current';
+    }
+    dotsHtml += '<div class="dot ' + dotClass + '" onclick="changeDay(' + i + ')"></div>';
+  }
+
+  // 2. Build Backlog HTML
+  var backlogHtml = '';
+  if (day > 1) {
+    var prevRec = state.days[day - 1];
+    var items = '';
+    if (prevRec.coding === 'missed') items += '<div class="backlog-item">Elite Coding: <span>' + codingTopics[day - 2] + '</span></div>';
+    if (prevRec.math === 'missed') items += '<div class="backlog-item">Math: <span>' + mathTopics[day - 2] + '</span></div>';
+    if (prevRec.comm === 'missed') items += '<div class="backlog-item">Fitness: <span>' + getFitness(day - 1) + '</span></div>';
+    
+    if (items !== '') {
+      backlogHtml = '<div class="backlog"><div class="backlog-title">Backlog from Day ' + (day - 1) + '</div>' + items + '</div>';
+    }
+  }
+
+  // 3. Build Card Toggle Buttons Utility
+  function makeToggles(key) {
+    var val = rec[key];
+    var doneActive = (val === 'done') ? 'active-done' : '';
+    var missedActive = (val === 'missed') ? 'active-missed' : '';
+    return '<div class="toggle-row">' +
+      '<button class="toggle ' + doneActive + '" onclick="setTask(\'' + key + '\', \'done\')">Done</button>' +
+      '<button class="toggle ' + missedActive + '" onclick="setTask(\'' + key + '\', \'missed\')">Missed</button>' +
+    '</div>';
+  }
+
+  // Assemble full UI string sequentially via traditional concatenation
+  var html = '';
+  html += '<div class="masthead">';
+  html += '  <div class="eyebrow">45-Day Tracker</div>';
+  html += '  <h1>Deep Focus Hub</h1>';
+  html += '  <div class="subtitle">Coding · Math · Communication</div>';
+  html += '</div>';
+
+  html += '<div class="rail">' + dotsHtml + '</div>';
+
+  html += '<div class="nav">';
+  html += '  <button class="nav-btn" onclick="moveDay(-1)" ' + (day === 1 ? 'disabled' : '') + '>&larr; Prev</button>';
+  html += '  <div class="day-label">DAY <b>' + day + '</b> / 45</div>';
+  html += '  <button class="nav-btn" onclick="moveDay(1)" ' + (day === 45 ? 'disabled' : '') + '>Next &rarr;</button>';
+  html += '</div>';
+
+  if (isRecovery) {
+    html += '<div class="recovery-banner"><b>Recovery Framework Activated</b> — Load lowered 50%.</div>';
+  }
+
+  html += backlogHtml;
+  html += '<div class="quote">"' + quotes[day - 1] + '"</div>';
+
+  // Task 1
+  html += '<div class="task">';
+  html += '  <div class="task-head"><div class="task-name">ELITE CODING</div><div class="task-time">' + cTime + ' MIN</div></div>';
+  html += '  <div class="task-body"><span class="concept-label">Topic</span><span class="concept-value">' + codingTopics[day - 1] + '</span></div>';
+  html += '  <div class="mandate">Manual tracing required. No AI code generation.</div>';
+  html +=    makeToggles('coding');
+  html += '</div>';
+
+  // Task 2
+  html += '<div class="task">';
+  html += '  <div class="task-head"><div class="task-name">MATH &amp; CIRCUITS</div><div class="task-time">' + mTime + ' MIN</div></div>';
+  html += '  <div class="task-body"><span class="concept-label">Topic</span><span class="concept-value">' + mathTopics[day - 1] + '</span></div>';
+  html +=    makeToggles('math');
+  html += '</div>';
+
+  // Task 3
+  html += '<div class="task">';
+  html += '  <div class="task-head"><div class="task-name">COMMUNICATION &amp; FUEL</div><div class="task-time">' + mTime + ' MIN</div></div>';
+  html += '  <div class="task-body">';
+  html += '    <span class="concept-label">Drill</span><span class="concept-value">Phonetic shadowing & verbal reading log.</span>';
+  html += '    <span class="concept-label">Workout</span><span class="concept-value">' + getFitness(day) + '</span>';
+  html += '  </div>';
+  html +=    makeToggles('comm');
+  html += '</div>';
+
+  // Log footer area
+  html += '<div class="status-log">';
+  html += '  <span class="concept-label">Daily Notes / Reflections</span>';
+  html += '  <textarea id="reflectionBox" oninput="saveText()" placeholder="Log breakthroughs or issues here...">' + (rec.reflection || '') + '</textarea>';
+  html += '</div>';
+
+  app.innerHTML = html;
+}
+
+// Global control bindings attached explicitly for absolute execution safety
+window.changeDay = function(d) {
+  state.current = d;
+  saveToDevice();
+  render();
+};
+
+window.moveDay = function(delta) {
+  var target = state.current + delta;
+  if (target >= 1 && target <= 45) {
+    state.current = target;
+    saveToDevice();
+    render();
+  }
+};
+
+window.setTask = function(key, val) {
+  var currentVal = state.days[state.current][key];
+  state.days[state.current][key] = (currentVal === val) ? null : val;
+  saveToDevice();
+  render();
+};
+
+window.saveText = function() {
+  var box = document.getElementById('reflectionBox');
+  if (box) {
+    state.days[state.current].reflection = box.value;
+    saveToDevice();
+  }
+};
+
+// Fire render loops directly without waiting for asynchronous document flags
+render();
+</script>
+</body>
+</html>
